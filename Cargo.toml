@@ -1,0 +1,29 @@
+[package]
+name = "peercat"
+version = "0.1.0"
+edition = "2021"
+authors = ["PeerCat <support@peerc.at>"]
+description = "Official Rust SDK for the PeerCat AI image generation API"
+license = "MIT"
+repository = "https://github.com/peercat/peercat-sdk-rust"
+homepage = "https://peerc.at"
+documentation = "https://docs.rs/peercat"
+readme = "README.md"
+keywords = ["peercat", "ai", "image-generation", "stable-diffusion", "solana"]
+categories = ["api-bindings", "web-programming::http-client"]
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["rt-multi-thread", "macros"] }
+wiremock = "0.6"
+
+[features]
+default = []
+rustls-tls = ["reqwest/rustls-tls"]
+native-tls = ["reqwest/native-tls"]
