@@ -54,6 +54,10 @@ impl RateLimitInfo {
 /// All possible errors from the PeerCat SDK
 #[derive(Error, Debug)]
 pub enum PeerCatError {
+    /// Empty API key error (configuration error)
+    #[error("API key is required")]
+    EmptyApiKey,
+
     /// Authentication error (invalid or missing API key)
     #[error("Authentication error: {message}")]
     Authentication {

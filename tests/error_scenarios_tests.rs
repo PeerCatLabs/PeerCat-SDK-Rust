@@ -14,6 +14,7 @@ fn create_test_client(mock_server: &MockServer) -> PeerCat {
             .with_base_url(&mock_server.uri())
             .with_max_retries(0),
     )
+    .expect("Failed to create test client")
 }
 
 // ============ Malformed Response Tests ============
@@ -544,4 +545,25 @@ async fn test_zero_credits() {
     let balance = client.get_balance().await.expect("Should handle zero values");
 
     assert_eq!(balance.credits, 0.0);
+}
+
+// ============ Configuration Error Tests ============
+
+#[test]
+fn test_empty_api_key_returns_error() {
+    let result = PeerCat::new("");
+
+    assert!(result.is_err());
+    match result {
+        Err(PeerCatError::EmptyApiKey) => {}
+        Err(e) => panic!("Expected EmptyApiKey error, got {:?}", e),
+        Ok(_) => panic!("Expected error for empty API key"),
+    }
+}
+
+#[test]
+fn test_valid_api_key_succeeds() {
+    let result = PeerCat::new("pcat_test_key");
+
+    assert!(result.is_ok());
 }

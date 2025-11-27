@@ -20,7 +20,7 @@ const USER_AGENT: &str = concat!("peercat-rust/", env!("CARGO_PKG_VERSION"));
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let client = PeerCat::new("pcat_live_xxx");
+///     let client = PeerCat::new("pcat_live_xxx")?;
 ///
 ///     let result = client.generate(
 ///         GenerateParams::new("A beautiful sunset over mountains")
@@ -42,22 +42,27 @@ pub struct PeerCat {
 impl PeerCat {
     /// Create a new PeerCat client with an API key
     ///
+    /// # Errors
+    ///
+    /// Returns `PeerCatError::EmptyApiKey` if the API key is empty.
+    ///
     /// # Example
     ///
     /// ```no_run
     /// use peercat::PeerCat;
     ///
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
+    /// # Ok::<(), peercat::PeerCatError>(())
     /// ```
-    pub fn new(api_key: impl Into<String>) -> Self {
+    pub fn new(api_key: impl Into<String>) -> Result<Self> {
         Self::with_config(PeerCatConfig::new(api_key))
     }
 
     /// Create a new PeerCat client with custom configuration
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the API key is empty. Validate your configuration before calling this.
+    /// Returns `PeerCatError::EmptyApiKey` if the API key is empty.
     ///
     /// # Example
     ///
@@ -68,11 +73,12 @@ impl PeerCat {
     ///     PeerCatConfig::new("pcat_live_xxx")
     ///         .with_timeout(30)
     ///         .with_max_retries(5)
-    /// );
+    /// )?;
+    /// # Ok::<(), peercat::PeerCatError>(())
     /// ```
-    pub fn with_config(config: PeerCatConfig) -> Self {
+    pub fn with_config(config: PeerCatConfig) -> Result<Self> {
         if config.api_key.is_empty() {
-            panic!("peercat: API key is required");
+            return Err(PeerCatError::EmptyApiKey);
         }
 
         let timeout = config.timeout.unwrap_or(DEFAULT_TIMEOUT);
@@ -88,12 +94,12 @@ impl PeerCat {
             .build()
             .expect("Failed to create HTTP client");
 
-        Self {
+        Ok(Self {
             api_key: config.api_key,
             base_url,
             client,
             max_retries: config.max_retries.unwrap_or(DEFAULT_MAX_RETRIES),
-        }
+        })
     }
 
     // ============ Image Generation ============
@@ -106,7 +112,7 @@ impl PeerCat {
     /// use peercat::{PeerCat, GenerateParams};
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     ///
     /// let result = client.generate(
     ///     GenerateParams::new("A futuristic cityscape at night")
@@ -130,7 +136,7 @@ impl PeerCat {
     /// use peercat::PeerCat;
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     /// let models = client.get_models().await?;
     ///
     /// for model in models {
@@ -152,7 +158,7 @@ impl PeerCat {
     /// use peercat::PeerCat;
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     /// let prices = client.get_prices().await?;
     ///
     /// println!("SOL/USD: ${}", prices.sol_price);
@@ -173,7 +179,7 @@ impl PeerCat {
     /// use peercat::PeerCat;
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     /// let balance = client.get_balance().await?;
     ///
     /// println!("Credits: ${}", balance.credits);
@@ -192,7 +198,7 @@ impl PeerCat {
     /// use peercat::{PeerCat, HistoryParams};
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     ///
     /// let history = client.get_history(
     ///     HistoryParams::new().with_limit(10)
@@ -232,7 +238,7 @@ impl PeerCat {
     /// use peercat::{PeerCat, CreateKeyParams};
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     ///
     /// let new_key = client.create_key(CreateKeyParams {
     ///     name: Some("Production App".to_string()),
@@ -284,7 +290,7 @@ impl PeerCat {
     /// use peercat::{PeerCat, SubmitPromptParams};
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     ///
     /// let submission = client.submit_prompt(
     ///     SubmitPromptParams::new("A majestic dragon")
@@ -308,7 +314,7 @@ impl PeerCat {
     /// use peercat::PeerCat;
     ///
     /// # async fn example() -> peercat::Result<()> {
-    /// let client = PeerCat::new("pcat_live_xxx");
+    /// let client = PeerCat::new("pcat_live_xxx")?;
     ///
     /// let status = client.get_onchain_status("txSignature...").await?;
     ///

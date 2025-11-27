@@ -14,6 +14,7 @@ fn create_test_client(mock_server: &MockServer) -> PeerCat {
             .with_base_url(&mock_server.uri())
             .with_max_retries(0),
     )
+    .expect("Failed to create test client")
 }
 
 // ============ Generate Tests ============
@@ -715,7 +716,8 @@ async fn test_custom_base_url() {
         PeerCatConfig::new("test_key")
             .with_base_url(&format!("{}/", mock_server.uri())) // Trailing slash should be stripped
             .with_max_retries(0),
-    );
+    )
+    .expect("Failed to create client");
 
     let result = client.get_balance().await;
     assert!(result.is_ok());

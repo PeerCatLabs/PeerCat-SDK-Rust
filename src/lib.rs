@@ -10,7 +10,7 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // Create a client with your API key
-//!     let client = PeerCat::new("pcat_live_xxx");
+//!     let client = PeerCat::new("pcat_live_xxx")?;
 //!
 //!     // Generate an image
 //!     let result = client.generate(
@@ -28,12 +28,15 @@
 //! ```no_run
 //! use peercat::{PeerCat, PeerCatConfig};
 //!
+//! # fn main() -> peercat::Result<()> {
 //! let client = PeerCat::with_config(
 //!     PeerCatConfig::new("pcat_live_xxx")
 //!         .with_base_url("https://custom.api.url")
 //!         .with_timeout(30)
 //!         .with_max_retries(5)
-//! );
+//! )?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Demo Mode
@@ -44,7 +47,7 @@
 //! use peercat::{PeerCat, GenerateParams};
 //!
 //! # async fn example() -> peercat::Result<()> {
-//! let client = PeerCat::new("pcat_live_xxx");
+//! let client = PeerCat::new("pcat_live_xxx")?;
 //!
 //! let result = client.generate(
 //!     GenerateParams::new("Test prompt")
@@ -62,7 +65,7 @@
 //! use peercat::{PeerCat, GenerateParams, PeerCatError};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = PeerCat::new("pcat_live_xxx");
+//! let client = PeerCat::new("pcat_live_xxx")?;
 //!
 //! match client.generate(GenerateParams::new("test")).await {
 //!     Ok(result) => println!("Image: {}", result.image_url),
@@ -93,7 +96,7 @@
 //! use peercat::{PeerCat, SubmitPromptParams, OnChainStatus};
 //!
 //! # async fn example() -> peercat::Result<()> {
-//! let client = PeerCat::new("pcat_live_xxx");
+//! let client = PeerCat::new("pcat_live_xxx")?;
 //!
 //! // Step 1: Submit prompt and get payment details
 //! let submission = client.submit_prompt(
