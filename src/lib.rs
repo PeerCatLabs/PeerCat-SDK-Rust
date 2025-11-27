@@ -72,9 +72,11 @@
 //!     Err(PeerCatError::InsufficientCredits { message, .. }) => {
 //!         eprintln!("Add more credits: {}", message);
 //!     }
-//!     Err(PeerCatError::RateLimit { retry_after, .. }) => {
-//!         if let Some(secs) = retry_after {
-//!             eprintln!("Rate limited, retry after {} seconds", secs);
+//!     Err(PeerCatError::RateLimit { rate_limit_info, .. }) => {
+//!         if let Some(info) = rate_limit_info {
+//!             if let Some(secs) = info.retry_after {
+//!                 eprintln!("Rate limited, retry after {} seconds", secs);
+//!             }
 //!         }
 //!     }
 //!     Err(e) => eprintln!("Error: {}", e),
@@ -117,7 +119,7 @@ mod types;
 
 // Re-export main types
 pub use client::PeerCat;
-pub use error::{PeerCatError, Result};
+pub use error::{PeerCatError, RateLimitInfo, Result};
 pub use types::{
     // Configuration
     PeerCatConfig,
@@ -219,9 +221,15 @@ mod tests {
         let rate_limit = PeerCatError::RateLimit {
             message: "test".to_string(),
             code: "rate_limit".to_string(),
-            retry_after: Some(60),
+            rate_limit_info: Some(RateLimitInfo {
+                limit: Some(100),
+                remaining: Some(0),
+                reset: Some(1700000000),
+                retry_after: Some(60),
+            }),
         };
         assert!(rate_limit.is_retryable());
+        assert_eq!(rate_limit.retry_after(), Some(60));
     }
 
     #[test]

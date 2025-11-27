@@ -2,6 +2,55 @@
 
 use thiserror::Error;
 
+/// Rate limit information from response headers
+#[derive(Debug, Clone, Default)]
+pub struct RateLimitInfo {
+    /// Maximum requests allowed in the window
+    pub limit: Option<u32>,
+    /// Remaining requests in the current window
+    pub remaining: Option<u32>,
+    /// Unix timestamp when the rate limit resets
+    pub reset: Option<i64>,
+    /// Seconds to wait before retrying (from Retry-After header)
+    pub retry_after: Option<u64>,
+}
+
+impl RateLimitInfo {
+    /// Parse rate limit information from HTTP headers
+    pub fn from_headers(headers: &reqwest::header::HeaderMap) -> Option<Self> {
+        let limit = headers
+            .get("X-RateLimit-Limit")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse().ok());
+
+        let remaining = headers
+            .get("X-RateLimit-Remaining")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse().ok());
+
+        let reset = headers
+            .get("X-RateLimit-Reset")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse().ok());
+
+        let retry_after = headers
+            .get("Retry-After")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse().ok());
+
+        if limit.is_some() || remaining.is_some() || reset.is_some() || retry_after.is_some() {
+            Some(Self {
+                limit,
+                remaining,
+                reset,
+                retry_after,
+            })
+        } else {
+            None
+        }
+    }
+}
+
 /// All possible errors from the PeerCat SDK
 #[derive(Error, Debug)]
 pub enum PeerCatError {
@@ -30,7 +79,7 @@ pub enum PeerCatError {
     RateLimit {
         message: String,
         code: String,
-        retry_after: Option<u64>,
+        rate_limit_info: Option<RateLimitInfo>,
     },
 
     /// Resource not found
@@ -80,6 +129,7 @@ impl PeerCatError {
         code: String,
         message: String,
         param: Option<String>,
+        rate_limit_info: Option<RateLimitInfo>,
     ) -> Self {
         match error_type.as_str() {
             "authentication_error" => PeerCatError::Authentication {
@@ -96,7 +146,7 @@ impl PeerCatError {
             "rate_limit_error" => PeerCatError::RateLimit {
                 message,
                 code,
-                retry_after: None,
+                rate_limit_info,
             },
             "not_found" => PeerCatError::NotFound {
                 message,
@@ -115,6 +165,24 @@ impl PeerCatError {
                 message,
                 param,
             },
+        }
+    }
+
+    /// Returns the retry-after value in seconds if available
+    pub fn retry_after(&self) -> Option<u64> {
+        match self {
+            PeerCatError::RateLimit { rate_limit_info, .. } => {
+                rate_limit_info.as_ref().and_then(|info| info.retry_after)
+            }
+            _ => None,
+        }
+    }
+
+    /// Returns the rate limit info if this is a rate limit error
+    pub fn rate_limit_info(&self) -> Option<&RateLimitInfo> {
+        match self {
+            PeerCatError::RateLimit { rate_limit_info, .. } => rate_limit_info.as_ref(),
+            _ => None,
         }
     }
 

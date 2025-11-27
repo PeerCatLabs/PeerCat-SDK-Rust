@@ -3,7 +3,7 @@
 use reqwest::{Client, StatusCode};
 use std::time::Duration;
 
-use crate::error::{PeerCatError, Result};
+use crate::error::{PeerCatError, RateLimitInfo, Result};
 use crate::types::*;
 
 const DEFAULT_BASE_URL: &str = "https://api.peerc.at";
@@ -55,6 +55,10 @@ impl PeerCat {
 
     /// Create a new PeerCat client with custom configuration
     ///
+    /// # Panics
+    ///
+    /// Panics if the API key is empty. Validate your configuration before calling this.
+    ///
     /// # Example
     ///
     /// ```no_run
@@ -67,6 +71,10 @@ impl PeerCat {
     /// );
     /// ```
     pub fn with_config(config: PeerCatConfig) -> Self {
+        if config.api_key.is_empty() {
+            panic!("peercat: API key is required");
+        }
+
         let timeout = config.timeout.unwrap_or(DEFAULT_TIMEOUT);
         let base_url = config
             .base_url
@@ -373,8 +381,21 @@ impl PeerCat {
                 Ok(response) => {
                     let status = response.status();
 
+                    // Parse rate limit headers
+                    let rate_limit_info = RateLimitInfo::from_headers(response.headers());
+
                     if status.is_success() {
-                        return response.json().await.map_err(PeerCatError::from);
+                        return response.json().await.map_err(|e| {
+                            // Detect decode errors and convert to Json variant instead of Network
+                            // reqwest::Error::is_decode() returns true for JSON deserialization failures
+                            if e.is_decode() {
+                                PeerCatError::Json(serde_json::Error::io(
+                                    std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()),
+                                ))
+                            } else {
+                                PeerCatError::Network(e)
+                            }
+                        });
                     }
 
                     // Parse error response
@@ -388,6 +409,7 @@ impl PeerCat {
                             err.error.code,
                             err.error.message,
                             err.error.param,
+                            rate_limit_info.clone(),
                         ),
                         Err(_) => PeerCatError::Unknown {
                             status: status.as_u16(),
@@ -414,9 +436,17 @@ impl PeerCat {
                 }
             }
 
-            // Exponential backoff before retry
+            // Exponential backoff before retry (use Retry-After for rate limits)
             if attempt < self.max_retries {
-                let delay = std::cmp::min(1000 * 2u64.pow(attempt), 10000);
+                let mut delay = std::cmp::min(1000 * 2u64.pow(attempt), 10000);
+
+                // Use Retry-After header if available for rate limit errors
+                if let Some(ref error) = last_error {
+                    if let Some(retry_after) = error.retry_after() {
+                        delay = retry_after * 1000; // Convert seconds to milliseconds
+                    }
+                }
+
                 tokio::time::sleep(Duration::from_millis(delay)).await;
             }
         }
