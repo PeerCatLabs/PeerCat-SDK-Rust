@@ -104,6 +104,8 @@ pub struct PriceResponse {
     pub slippage_tolerance: f64,
     /// Timestamp of price update
     pub updated_at: String,
+    /// Treasury PDA address to send payments to
+    pub treasury: String,
     /// Prices for each model
     pub models: Vec<ModelPrice>,
 }

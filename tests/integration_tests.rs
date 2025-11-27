@@ -168,6 +168,7 @@ async fn test_get_prices() {
             "solPrice": 185.50,
             "slippageTolerance": 0.05,
             "updatedAt": "2024-01-15T12:00:00Z",
+            "treasury": "9JKi6Tr7JdsTJw1zNedF5vML9GpPnjHD9DWuZq1oE6nV",
             "models": [
                 {
                     "model": "stable-diffusion-xl",
@@ -185,6 +186,7 @@ async fn test_get_prices() {
 
     assert_eq!(prices.sol_price, 185.50);
     assert_eq!(prices.slippage_tolerance, 0.05);
+    assert_eq!(prices.treasury, "9JKi6Tr7JdsTJw1zNedF5vML9GpPnjHD9DWuZq1oE6nV");
     assert_eq!(prices.models.len(), 1);
     assert_eq!(prices.models[0].model, "stable-diffusion-xl");
 }
