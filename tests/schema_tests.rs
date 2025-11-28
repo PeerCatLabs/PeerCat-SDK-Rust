@@ -7,9 +7,9 @@
 //! 4. Nullable fields are correctly represented as Option<T>
 
 use peercat::{
-    Balance, GenerateResult, GenerateUsage, GenerationMode, HistoryItem, HistoryParams,
-    HistoryResponse, HistoryStatus, KeyEnvironment, Model, ModelPrice, OnChainGenerationStatus,
-    OnChainStatus, Pagination, PriceResponse, PromptSubmission, RequiredAmount,
+    Balance, GenerateResult, GenerateUsage, GenerationMode, HistoryItem, HistoryStatus,
+    KeyEnvironment, Model, ModelPrice, OnChainGenerationStatus, OnChainStatus, Pagination,
+    PriceResponse, RequiredAmount,
 };
 use serde_json::json;
 
